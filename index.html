@@ -45,14 +45,6 @@ h1{margin-bottom:5px;}
     border-radius:5px;
 }
 
-.bullet{
-    width:6px;
-    height:6px;
-    background:yellow;
-    position:absolute;
-    border-radius:50%;
-}
-
 button{
     padding:10px;
     margin:5px;
@@ -83,36 +75,21 @@ Questions: <span id="answered">0</span>/50
 </div>
 
 <script>
+let health = 100;
+let resources = 0;
+let wave = 1;
+let answered = 0;
+let towers = [];
+let enemies = [];
+let gameActive = true;
 
-let health=100;
-let resources=0;
-let wave=1;
-let answered=0;
-let towers=[];
-let enemies=[];
-let gameActive=true;
-
+// Example questions
 const questions=[
 {q:"Spark of WWI?",a:["Franz Ferdinand assassination","Lusitania","Zimmerman Telegram","U-boats"],c:0},
 {q:"US entered war as:",a:["Allied","Central","Neutral","Axis"],c:0},
 {q:"German submarines:",a:["Tanks","Zeppelins","U-boats","Aces"],c:2},
 {q:"Trench ditch fighting:",a:["Imperialism","Militarism","Sub warfare","Trench warfare"],c:3},
-{q:"Government persuasion:",a:["Propaganda","Nationalism","Alliances","Imperialism"],c:0},
-{q:"Armistice Day:",a:["Nov 11 1918","June 6 1919","May 28","Dec 12"],c:0},
-{q:"Militarism means:",a:["Stockpiling weapons","Extreme pride","Colonizing","Alliances"],c:0},
-{q:"President during WWI:",a:["Wilson","FDR","TR","Eisenhower"],c:0},
-{q:"Treaty ending WWI:",a:["Versailles","Paris","Ghent","Vienna"],c:0},
-{q:"Military conscription:",a:["Draft","Dodge","Warrant","Enlist"],c:0},
-{q:"Extreme pride:",a:["Nationalism","Militarism","Imperialism","Alliances"],c:0},
-{q:"League of Nations exists today?",a:["False","True"],c:0},
-{q:"Zimmerman Telegram asked Mexico to:",a:["Attack US","Join Allies","Stay neutral","Attack Britain"],c:0},
-{q:"Lusitania sunk by:",a:["Germany","France","Britain","Russia"],c:0},
-{q:"Tank introduced by:",a:["Britain","Germany","France","USA"],c:0},
-{q:"Ottoman Empire sided with:",a:["Central","Allied"],c:0},
-{q:"France wanted ____ at Versailles:",a:["Revenge","Peace only","Neutrality","Alliance with Germany"],c:0},
-{q:"No Man's Land was:",a:["Between trenches","Ocean route","German capital","French border"],c:0},
-{q:"War Bonds funded:",a:["War effort","Schools","Roads","Taxes"],c:0},
-{q:"Victory Gardens helped:",a:["Food supply","Weapons","Ships","Draft"],c:0}
+{q:"Government persuasion:",a:["Propaganda","Nationalism","Alliances","Imperialism"],c:0}
 ];
 
 // Duplicate to reach 50
@@ -121,86 +98,110 @@ while(questions.length<50){
 }
 
 function updateStats(){
-    document.getElementById("health").innerText=health;
-    document.getElementById("resources").innerText=resources;
-    document.getElementById("wave").innerText=wave;
-    document.getElementById("answered").innerText=answered;
-    if(health<=0){
+    document.getElementById("health").innerText = health;
+    document.getElementById("resources").innerText = resources;
+    document.getElementById("wave").innerText = wave;
+    document.getElementById("answered").innerText = answered;
+    if(health <= 0){
         alert("Central Powers Overran Europe!");
         location.reload();
     }
 }
 
 function askQuestion(){
-    if(answered>=50){
+    if(answered >= 50){
         alert("Victory! Treaty of Versailles Signed!");
         location.reload();
         return;
     }
-    let q=questions[Math.floor(Math.random()*questions.length)];
-    document.getElementById("question").innerText=q.q;
+    let q = questions[Math.floor(Math.random() * questions.length)];
+    document.getElementById("question").innerText = q.q;
 
-    let html="";
+    let html = "";
     q.a.forEach((ans,i)=>{
-        html+=`<button onclick="answer(${i},${q.c})">${ans}</button>`;
+        html += `<button onclick="answer(${i},${q.c})">${ans}</button>`;
     });
-    document.getElementById("answers").innerHTML=html;
+    document.getElementById("answers").innerHTML = html;
 }
 
-function answer(choice,correct){
+function answer(choice, correct){
     answered++;
-    if(choice==correct){
-        resources+=15;
-    }else{
-        health-=10;
+    if(choice == correct){
+        resources += 15;
+    } else {
+        health -= 10;
     }
     updateStats();
     askQuestion();
 }
 
-// Place towers
-document.getElementById("map").addEventListener("click",function(e){
-    if(resources>=20){
-        let rect=this.getBoundingClientRect();
-        let tower=document.createElement("div");
-        tower.className="tower";
-        tower.style.left=(e.clientX-rect.left-15)+"px";
-        tower.style.top=(e.clientY-rect.top-15)+"px";
+// --- Place towers ---
+document.getElementById("map").addEventListener("click", function(e){
+    if(resources >= 20){
+        let rect = this.getBoundingClientRect();
+        let tower = document.createElement("div");
+        tower.className = "tower";
+        tower.style.left = (e.clientX - rect.left - 15) + "px";
+        tower.style.top = (e.clientY - rect.top - 15) + "px";
+        tower.health = 3; // 3 hits, each reduces 33%
         this.appendChild(tower);
         towers.push(tower);
-        resources-=20;
+        resources -= 20;
         updateStats();
     }
 });
 
-// --- SPAWN ENEMIES WITH LANES AND RANDOM SPEED ---
+// --- SPAWN ENEMIES WITH MULTIPLE LANES ---
+const lanes = [50, 120, 200, 280, 360]; // 5 lanes
+
 function spawnEnemy() {
     if(!gameActive) return;
 
-    let enemy=document.createElement("div");
-    enemy.className="enemy";
+    let enemy = document.createElement("div");
+    enemy.className = "enemy";
     document.getElementById("map").appendChild(enemy);
 
-    // Define lanes
-    let lanes = [50,120,200,280,360];
-    let startY = lanes[Math.floor(Math.random()*lanes.length)];
-    enemy.style.top=startY+"px";
-    let posX=0;
-    enemy.style.left=posX+"px";
+    let startY = lanes[Math.floor(Math.random() * lanes.length)];
+    enemy.style.top = startY + "px";
+    let posX = 0;
+    enemy.style.left = posX + "px";
 
-    let speed = 2 + wave*0.2 + Math.random(); 
+    let speed = 2 + wave * 0.2 + Math.random();
 
+    // Move enemy
     enemy.moveInterval = setInterval(()=>{
         posX += speed;
-        enemy.style.left = posX+"px";
+        enemy.style.left = posX + "px";
 
-        if(posX>880){
-            health-=5;
+        // Check for tower collision
+        towers.forEach(tower=>{
+            if(!tower) return;
+            let tx = tower.offsetLeft + 15;
+            let ty = tower.offsetTop + 15;
+            let ex = enemy.offsetLeft + 12;
+            let ey = enemy.offsetTop + 12;
+            let dist = Math.hypot(tx-ex, ty-ey);
+            if(dist < 40){ // enemy hits tower
+                tower.health -= 1;
+                if(tower.health <= 0){
+                    tower.remove();
+                    towers = towers.filter(t => t!==tower);
+                }
+                clearInterval(enemy.moveInterval);
+                enemy.remove();
+                enemies = enemies.filter(e => e!==enemy);
+            }
+        });
+
+        // Enemy reaches right side
+        if(posX > 880){
+            health -= 5;
             updateStats();
             clearInterval(enemy.moveInterval);
             enemy.remove();
             enemies = enemies.filter(e => e!==enemy);
         }
+
     },30);
 
     enemies.push(enemy);
@@ -215,14 +216,12 @@ function towerAttack(){
                 let ty = tower.offsetTop + 15;
                 let ex = enemy.offsetLeft + 12;
                 let ey = enemy.offsetTop + 12;
-
                 let dist = Math.hypot(tx-ex, ty-ey);
-
-                if(dist<150){
+                if(dist < 150){
                     clearInterval(enemy.moveInterval);
                     enemy.remove();
-                    resources+=5;
                     enemies = enemies.filter(e => e!==enemy);
+                    resources += 5;
                 }
             }
         });
@@ -231,7 +230,6 @@ function towerAttack(){
 
 // --- GAME LOOP ---
 setInterval(()=>{
-    // Spawn 2 enemies per wave
     for(let i=0;i<2;i++){
         spawnEnemy();
     }
@@ -245,7 +243,6 @@ setInterval(()=>{
 
 askQuestion();
 updateStats();
-
 </script>
 </body>
 </html>
