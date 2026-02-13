@@ -145,7 +145,7 @@ document.getElementById("map").addEventListener("click", function(e){
         tower.className = "tower";
         tower.style.left = (e.clientX - rect.left - 15) + "px";
         tower.style.top = (e.clientY - rect.top - 15) + "px";
-        tower.health = 3; // 3 hits
+        tower.health = 2; // 3 hits
         this.appendChild(tower);
         towers.push(tower);
         resources -= 20;
