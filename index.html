@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>WWI Defense Command</title>
+<title>WWI Defense Command - Hard Mode</title>
 <style>
 body{
     background:#111;
@@ -43,6 +43,7 @@ h1{margin-bottom:5px;}
     background:limegreen;
     position:absolute;
     border-radius:5px;
+    transition: opacity 0.2s;
 }
 
 button{
@@ -58,7 +59,7 @@ button{
 </head>
 <body>
 
-<h1>WWI Defense Command</h1>
+<h1>WWI Defense Command - Hard Mode</h1>
 
 <div id="stats">
 Health: <span id="health">100</span> |
@@ -97,7 +98,8 @@ while(questions.length<50){
     questions.push(...questions.slice(0,5));
 }
 
-const lanes = [50, 120, 200, 280, 360]; // enemy lanes
+// Lanes for enemies
+const lanes = [50, 120, 200, 280, 360];
 
 function updateStats(){
     document.getElementById("health").innerText = health;
@@ -110,6 +112,7 @@ function updateStats(){
     }
 }
 
+// Questions
 function askQuestion(){
     if(answered >= 50){
         alert("Victory! Treaty of Versailles Signed!");
@@ -145,7 +148,7 @@ document.getElementById("map").addEventListener("click", function(e){
         tower.className = "tower";
         tower.style.left = (e.clientX - rect.left - 15) + "px";
         tower.style.top = (e.clientY - rect.top - 15) + "px";
-        tower.health = 2; // 3 hits
+        tower.health = 2; // breaks faster
         this.appendChild(tower);
         towers.push(tower);
         resources -= 20;
@@ -153,7 +156,7 @@ document.getElementById("map").addEventListener("click", function(e){
     }
 });
 
-// --- SPAWN ENEMY ---
+// Spawn single enemy
 function spawnEnemy(lane, speed){
     let enemy = document.createElement("div");
     enemy.className = "enemy";
@@ -166,7 +169,7 @@ function spawnEnemy(lane, speed){
         posX += speed;
         enemy.style.left = posX + "px";
 
-        // Check collision with towers
+        // Collision with towers
         towers.forEach(tower=>{
             if(!tower) return;
             let tx = tower.offsetLeft + 15;
@@ -174,8 +177,9 @@ function spawnEnemy(lane, speed){
             let ex = enemy.offsetLeft + 12;
             let ey = enemy.offsetTop + 12;
             let dist = Math.hypot(tx-ex, ty-ey);
-            if(dist < 40){ // enemy hits tower
+            if(dist < 40){
                 tower.health -= 1;
+                tower.style.opacity = tower.health/2; // visual indicator
                 if(tower.health <= 0){
                     tower.remove();
                     towers = towers.filter(t => t!==tower);
@@ -186,7 +190,7 @@ function spawnEnemy(lane, speed){
             }
         });
 
-        // Enemy reaches right edge
+        // Enemy reaches right
         if(posX > 880){
             health -= 5;
             updateStats();
@@ -194,12 +198,12 @@ function spawnEnemy(lane, speed){
             enemy.remove();
             enemies = enemies.filter(e => e!==enemy);
         }
-    },30);
+    },20); // faster movement
 
     enemies.push(enemy);
 }
 
-// --- TOWER ATTACK ---
+// Towers attack enemies
 function towerAttack(){
     towers.forEach(tower=>{
         enemies.forEach(enemy=>{
@@ -220,21 +224,21 @@ function towerAttack(){
     });
 }
 
-// --- SPAWN WAVES ---
+// Spawn full wave
 function spawnWave(){
-    let enemiesInWave = 3 + wave; // increase number per wave
-    for(let i=0;i<enemiesInWave;i++){
+    let enemiesInWave = 5 + wave*2; // more enemies each wave
+    for(let i=0; i<enemiesInWave; i++){
         let lane = lanes[Math.floor(Math.random()*lanes.length)];
-        let speed = 2 + wave*0.2 + Math.random();
-        setTimeout(()=>{spawnEnemy(lane, speed);}, i*500); // stagger enemies
+        let speed = 3 + wave*0.4 + Math.random(); // faster enemies
+        setTimeout(()=>spawnEnemy(lane,speed), i*300); // stagger spawn 0.3s
     }
     wave++;
     updateStats();
 }
 
 // Game loop
-setInterval(towerAttack,800);
-setInterval(spawnWave, 6000); // spawn new wave every 6s
+setInterval(towerAttack,500); // faster tower attacks
+setInterval(spawnWave,5000);   // waves every 5 seconds
 
 askQuestion();
 updateStats();
