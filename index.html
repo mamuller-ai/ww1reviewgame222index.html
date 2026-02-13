@@ -83,7 +83,7 @@ let towers = [];
 let enemies = [];
 let gameActive = true;
 
-// Example questions
+// Sample questions
 const questions=[
 {q:"Spark of WWI?",a:["Franz Ferdinand assassination","Lusitania","Zimmerman Telegram","U-boats"],c:0},
 {q:"US entered war as:",a:["Allied","Central","Neutral","Axis"],c:0},
@@ -96,6 +96,8 @@ const questions=[
 while(questions.length<50){
     questions.push(...questions.slice(0,5));
 }
+
+const lanes = [50, 120, 200, 280, 360]; // enemy lanes
 
 function updateStats(){
     document.getElementById("health").innerText = health;
@@ -135,7 +137,7 @@ function answer(choice, correct){
     askQuestion();
 }
 
-// --- Place towers ---
+// Place towers
 document.getElementById("map").addEventListener("click", function(e){
     if(resources >= 20){
         let rect = this.getBoundingClientRect();
@@ -143,7 +145,7 @@ document.getElementById("map").addEventListener("click", function(e){
         tower.className = "tower";
         tower.style.left = (e.clientX - rect.left - 15) + "px";
         tower.style.top = (e.clientY - rect.top - 15) + "px";
-        tower.health = 3; // 3 hits, each reduces 33%
+        tower.health = 3; // 3 hits
         this.appendChild(tower);
         towers.push(tower);
         resources -= 20;
@@ -151,29 +153,20 @@ document.getElementById("map").addEventListener("click", function(e){
     }
 });
 
-// --- SPAWN ENEMIES WITH MULTIPLE LANES ---
-const lanes = [50, 120, 200, 280, 360]; // 5 lanes
-
-function spawnEnemy() {
-    if(!gameActive) return;
-
+// --- SPAWN ENEMY ---
+function spawnEnemy(lane, speed){
     let enemy = document.createElement("div");
     enemy.className = "enemy";
     document.getElementById("map").appendChild(enemy);
-
-    let startY = lanes[Math.floor(Math.random() * lanes.length)];
-    enemy.style.top = startY + "px";
+    enemy.style.top = lane + "px";
     let posX = 0;
     enemy.style.left = posX + "px";
 
-    let speed = 2 + wave * 0.2 + Math.random();
-
-    // Move enemy
     enemy.moveInterval = setInterval(()=>{
         posX += speed;
         enemy.style.left = posX + "px";
 
-        // Check for tower collision
+        // Check collision with towers
         towers.forEach(tower=>{
             if(!tower) return;
             let tx = tower.offsetLeft + 15;
@@ -193,7 +186,7 @@ function spawnEnemy() {
             }
         });
 
-        // Enemy reaches right side
+        // Enemy reaches right edge
         if(posX > 880){
             health -= 5;
             updateStats();
@@ -201,7 +194,6 @@ function spawnEnemy() {
             enemy.remove();
             enemies = enemies.filter(e => e!==enemy);
         }
-
     },30);
 
     enemies.push(enemy);
@@ -228,18 +220,21 @@ function towerAttack(){
     });
 }
 
-// --- GAME LOOP ---
-setInterval(()=>{
-    for(let i=0;i<2;i++){
-        spawnEnemy();
+// --- SPAWN WAVES ---
+function spawnWave(){
+    let enemiesInWave = 3 + wave; // increase number per wave
+    for(let i=0;i<enemiesInWave;i++){
+        let lane = lanes[Math.floor(Math.random()*lanes.length)];
+        let speed = 2 + wave*0.2 + Math.random();
+        setTimeout(()=>{spawnEnemy(lane, speed);}, i*500); // stagger enemies
     }
     wave++;
     updateStats();
-},4000);
+}
 
-setInterval(()=>{
-    towerAttack();
-},800);
+// Game loop
+setInterval(towerAttack,800);
+setInterval(spawnWave, 6000); // spawn new wave every 6s
 
 askQuestion();
 updateStats();
